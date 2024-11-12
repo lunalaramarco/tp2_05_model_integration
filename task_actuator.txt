@@ -1,0 +1,73 @@
+task_system_attribute.h contiene:
+
+
+	La tabla de estados y excitaciones definida para el diagrama de estados diseñado para el modelo del
+	actuador (tipo LED). 
+	
+	task_actuator_ev: tipos enumerativos para los eventos definidos por el modelo (EV_LED_OFF, ON, BLINK, etc.) 
+	task_actuator_st: tipos enumerativos para los estados definidos por el modelo (ST_LED_OFF, ON, BLINK_ON, etc.)
+	
+	task_actuator_id: tipos enumerativos para los identificadores de los 4 LEDs a utilizar. Previamente se
+	definió que GPIOS estaban disponibles para conectar los LEDS externos y se los seleccionó en el .ioc
+	
+    la declaración de los tipos estructuras de configuración (cfg) y datos (dta) de sensor
+    
+    task_actuator_cfg_t: estructura con campos relevantes para la implementacion del actuador. Estos son:
+    	un campo para el identificador previamente definido
+		un puntero al puerto del pin a usar
+		un campo para el pin
+		un campo para definir el estado encendido
+		un campo para definir el estado apagado
+		un campo para definir el tiempo del parpadeo
+		un campo para definir el tiempo del pulso
+    	
+    task_actuator_dta_t: estructura de 3 campos que se actualiza mediante la ejecucion de task_sensor.c
+    cuyos campos son:
+    	un campo que indica el valor actual del tick
+    	un campo que indica el estado actual del diagrama de estados
+    	un campo que indica el evento actual del diagrama de estados    
+        un campo booleano que se utiliza como señal para el posterior procesamiento de eventos 
+    
+    
+task_actuator.c contiene:
+
+	definiciones para distintos valores de tick a utilizar para el parpadeo y el pulso.
+	
+	task_actuator_cfg_list: lista de estructuras de configuracion de los actuadores a utilizar. Se debe indicar los campos de cada LED
+	como el id, el puerto, el pin elegido entre otros.
+
+	task_actuator_dta_list: lista de estructuras de datos de los actuadores a utilizar. Se debe inicializar los campos de cada LED,
+	con el estado inicial segun el diagrama definido y se inicializan su variable tick y evento.
+	    
+    Se define la cantidad de LEDS, segun la cantidad de elementos en la lista de estructuras.
+    
+    el método task_actuator_init(), inicializa el ejecutor cíclico de sensores, donde:
+        se imprime por consola el método invocado, y los estados iniciales de cada actuador
+        se apaga cada actuador.
+        
+        
+    el método task_actuator_update(), recorre el ejecutor cíclico de actuadores, donde:
+    	    	
+    	mediante un switch se implementa la tabla de estados y excitaciones en la cual:
+    	
+    		hay tantos case´s como estados tiene el statechart, donde:
+    		
+				cada case tiene tantos if , como transiciones salientes con eventos [guardas] tiene ese estado, donde:
+        
+        			en el cuerpo del if se puede: 
+        				
+        				limpiar el campo booleano de señalización
+            			escribir el pin asociado a cada LED mediante funciones de la HAL y los metodos para encenderlo según fue conectado.
+            			modificar la variable de estado del statechart
+            			modificar el tick del statechart
+            			
+    	
+put_event_task_actuator.c contiene:
+
+   
+   el método put_event_task_actuator(task_actuator_ev_t event, task_actuator_id_t identifier) que recibe un evento a generar
+   en el statechart del actuador y el identificador correspoiende del LED a asociar dicho evento. Este método es invocado
+   por las tareas del sistema y  asocia el evento recibido al actuador correspondiente y levanta el flag del campo booleano 
+   para indicar al statechart del actuador que un evento ha sido generado por el sistema, modificando los campos de la estructura
+   de datos del actuador correspondiente.
+    
